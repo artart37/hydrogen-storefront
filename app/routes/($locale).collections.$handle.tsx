@@ -1,13 +1,25 @@
 import {redirect, useLoaderData} from 'react-router';
 import type {Route} from './+types/collections.$handle';
-import {getPaginationVariables, Analytics} from '@shopify/hydrogen';
+import {getPaginationVariables, Analytics, Seo} from '@shopify/hydrogen';
 import {PaginatedResourceSection} from '~/components/PaginatedResourceSection';
 import {redirectIfHandleIsLocalized} from '~/lib/redirect';
 import {ProductItem} from '~/components/ProductItem';
 import type {ProductItemFragment} from 'storefrontapi.generated';
 
 export const meta: Route.MetaFunction = ({data}) => {
-  return [{title: `Hydrogen | ${data?.collection.title ?? ''} Collection`}];
+  if (!data?.collection) {
+    return [{title: 'Collection'}];
+  }
+
+  const title = data.seo?.title ?? `Hydrogen | ${data.collection.title} Collection`;
+  const description = data.seo?.description;
+
+  const tags = [{title}];
+  if (description) {
+    tags.push({name: 'description', content: description});
+  }
+
+  return tags;
 };
 
 export async function loader(args: Route.LoaderArgs) {
@@ -53,6 +65,7 @@ async function loadCriticalData({context, params, request}: Route.LoaderArgs) {
 
   return {
     collection,
+    seo: buildCollectionSeo(collection),
   };
 }
 
@@ -66,12 +79,15 @@ function loadDeferredData({context}: Route.LoaderArgs) {
 }
 
 export default function Collection() {
-  const {collection} = useLoaderData<typeof loader>();
+  const {collection, seo} = useLoaderData<typeof loader>();
 
   return (
     <div className="collection">
+      <Seo type="collection" data={collection} />
       <h1>{collection.title}</h1>
-      <p className="collection-description">{collection.description}</p>
+      <p className="collection-description">
+        {seo?.description ?? collection.description}
+      </p>
       <PaginatedResourceSection<ProductItemFragment>
         connection={collection.products}
         resourcesClassName="products-grid"
@@ -122,6 +138,16 @@ const PRODUCT_ITEM_FRAGMENT = `#graphql
     }
   }
 ` as const;
+
+function buildCollectionSeo(collection: {title?: string | null; description?: string | null}) {
+  const defaultTitle = 'Hydrogen | Collection';
+  const title = collection.title ? `Hydrogen | ${collection.title} Collection` : defaultTitle;
+  const description = collection.description
+    ? collection.description.slice(0, 155)
+    : undefined;
+
+  return {title, description};
+}
 
 // NOTE: https://shopify.dev/docs/api/storefront/2022-04/objects/collection
 const COLLECTION_QUERY = `#graphql
