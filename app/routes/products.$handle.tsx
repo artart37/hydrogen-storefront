@@ -1,4 +1,4 @@
-import {redirect, useLoaderData} from 'react-router';
+import {useLoaderData} from 'react-router';
 import type {Route} from './+types/products.$handle';
 import {
   getSelectedProductOptions,
@@ -12,10 +12,16 @@ import {ProductPrice} from '~/components/ProductPrice';
 import {ProductImage} from '~/components/ProductImage';
 import {ProductForm} from '~/components/ProductForm';
 import {redirectIfHandleIsLocalized} from '~/lib/redirect';
+import type {ProductFragment} from 'storefrontapi.generated';
 
 export const meta: Route.MetaFunction = ({data}) => {
+  if (!data?.product) return [{title: 'Product'}];
+
+  const title = data.product.seo?.title ?? data.product.title ?? 'Product';
+  const description = data.product.seo?.description ?? data.product.description;
+
   return [
-    {title: `Hydrogen | ${data?.product.title ?? ''}`},
+    {title: `HardWare For Devs | ${title}`},
     {
       rel: 'canonical',
       href: `/products/${data?.product.handle}`,
@@ -60,8 +66,37 @@ async function loadCriticalData({context, params, request}: Route.LoaderArgs) {
   redirectIfHandleIsLocalized(request, {handle, data: product});
 
   return {
-    product,
+    product: normalizeProduct(product),
+    shopPayDomain: context.env.PUBLIC_STORE_DOMAIN,
   };
+}
+
+function normalizeProduct(product: ProductFragment): ProductFragment {
+  if (product.selectedOrFirstAvailableVariant) return product;
+
+  const fallbackVariant = findFirstSelectableVariant(product);
+  if (!fallbackVariant) return product;
+
+  return {
+    ...product,
+    selectedOrFirstAvailableVariant: fallbackVariant,
+  };
+}
+
+function findFirstSelectableVariant(product: ProductFragment) {
+  const optionValues =
+    product.options?.flatMap((option) => option.optionValues ?? []) ?? [];
+
+  const available = optionValues.find(
+    (value) => value.firstSelectableVariant?.availableForSale,
+  )?.firstSelectableVariant;
+
+  if (available) return available;
+
+  return (
+    optionValues.find((value) => value.firstSelectableVariant)
+      ?.firstSelectableVariant ?? null
+  );
 }
 
 /**
@@ -77,7 +112,7 @@ function loadDeferredData({context, params}: Route.LoaderArgs) {
 }
 
 export default function Product() {
-  const {product} = useLoaderData<typeof loader>();
+  const {product, shopPayDomain} = useLoaderData<typeof loader>();
 
   // Optimistically selects a variant with given available variant information
   const selectedVariant = useOptimisticVariant(
@@ -87,7 +122,8 @@ export default function Product() {
 
   // Sets the search param to the selected variant without navigation
   // only when no search params are set in the url
-  useSelectedOptionInUrlParam(selectedVariant.selectedOptions);
+  const selectedOptions = selectedVariant?.selectedOptions ?? [];
+  useSelectedOptionInUrlParam(selectedOptions);
 
   // Get the product options array
   const productOptions = getProductOptions({
@@ -110,6 +146,7 @@ export default function Product() {
         <ProductForm
           productOptions={productOptions}
           selectedVariant={selectedVariant}
+          shopPayDomain={shopPayDomain}
         />
         <br />
         <br />

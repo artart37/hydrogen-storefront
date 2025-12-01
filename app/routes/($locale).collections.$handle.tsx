@@ -1,6 +1,6 @@
 import {redirect, useLoaderData} from 'react-router';
 import type {Route} from './+types/collections.$handle';
-import {getPaginationVariables, Analytics, Seo} from '@shopify/hydrogen';
+import {getPaginationVariables, Analytics} from '@shopify/hydrogen';
 import {PaginatedResourceSection} from '~/components/PaginatedResourceSection';
 import {redirectIfHandleIsLocalized} from '~/lib/redirect';
 import {ProductItem} from '~/components/ProductItem';
@@ -11,15 +11,11 @@ export const meta: Route.MetaFunction = ({data}) => {
     return [{title: 'Collection'}];
   }
 
-  const title = data.seo?.title ?? `Hydrogen | ${data.collection.title} Collection`;
+  const title =
+    data.seo?.title ?? `HardWare For Devs | ${data.collection.title} Collection`;
   const description = data.seo?.description;
 
-  const tags = [{title}];
-  if (description) {
-    tags.push({name: 'description', content: description});
-  }
-
-  return tags;
+  return [{title}];
 };
 
 export async function loader(args: Route.LoaderArgs) {
@@ -83,7 +79,6 @@ export default function Collection() {
 
   return (
     <div className="collection">
-      <Seo type="collection" data={collection} />
       <h1>{collection.title}</h1>
       <p className="collection-description">
         {seo?.description ?? collection.description}
@@ -140,8 +135,10 @@ const PRODUCT_ITEM_FRAGMENT = `#graphql
 ` as const;
 
 function buildCollectionSeo(collection: {title?: string | null; description?: string | null}) {
-  const defaultTitle = 'Hydrogen | Collection';
-  const title = collection.title ? `Hydrogen | ${collection.title} Collection` : defaultTitle;
+  const defaultTitle = 'HardWare For Devs | Collection';
+  const title = collection.title
+    ? `HardWare For Devs | ${collection.title} Collection`
+    : defaultTitle;
   const description = collection.description
     ? collection.description.slice(0, 155)
     : undefined;

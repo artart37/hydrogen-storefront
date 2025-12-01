@@ -1,5 +1,6 @@
 import {Link, useNavigate} from 'react-router';
 import {type MappedProductOptions} from '@shopify/hydrogen';
+import {ShopPayButton} from '@shopify/hydrogen';
 import type {
   Maybe,
   ProductOptionValueSwatch,
@@ -11,9 +12,11 @@ import type {ProductFragment} from 'storefrontapi.generated';
 export function ProductForm({
   productOptions,
   selectedVariant,
+  shopPayDomain,
 }: {
   productOptions: MappedProductOptions[];
   selectedVariant: ProductFragment['selectedOrFirstAvailableVariant'];
+  shopPayDomain?: string;
 }) {
   const navigate = useNavigate();
   const {open} = useAside();
@@ -120,6 +123,15 @@ export function ProductForm({
       >
         {selectedVariant?.availableForSale ? 'Add to cart' : 'Sold out'}
       </AddToCartButton>
+      {selectedVariant?.id && shopPayDomain ? (
+        <div className="product-shoppay">
+          <ShopPayButton
+            variantIds={[selectedVariant.id]}
+            storeDomain={shopPayDomain}
+            width="100%"
+          />
+        </div>
+      ) : null}
     </div>
   );
 }

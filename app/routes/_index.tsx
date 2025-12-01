@@ -9,7 +9,7 @@ import type {
 import {ProductItem} from '~/components/ProductItem';
 
 export const meta: Route.MetaFunction = () => {
-  return [{title: 'Hydrogen | Home'}];
+  return [{title: 'HardWare For Devs | Home'}];
 };
 
 export async function loader(args: Route.LoaderArgs) {
@@ -74,17 +74,19 @@ function FeaturedCollection({
   if (!collection) return null;
   const image = collection?.image;
   return (
-    <Link
-      className="featured-collection"
-      to={`/collections/${collection.handle}`}
-    >
+    <div className="featured-collection">
       {image && (
-        <div className="featured-collection-image">
-          <Image data={image} sizes="100vw" />
-        </div>
+        <Link to={`/collections/${collection.handle}`}>
+          <div className="featured-collection-image">
+            <Image data={image} sizes="100vw" />
+          </div>
+        </Link>
       )}
       <h1>{collection.title}</h1>
-    </Link>
+      <Link className="link" to={`/collections/${collection.handle}`}>
+        View collection
+      </Link>
+    </div>
   );
 }
 
